@@ -3,9 +3,10 @@ package io.github.openreportengine.render;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.openreportengine.datasource.DataSourceFactory;
 import net.sf.jasperreports.engine.*;
-import net.sf.jasperreports.engine.data.JsonDataSource;
-import net.sf.jasperreports.engine.export.JRPdfExporter;
-import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter;
+import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.xml.ReportLoader;
+import net.sf.jasperreports.pdf.JRPdfExporter;
+import net.sf.jasperreports.poi.export.JRXlsExporter;
 import net.sf.jasperreports.export.SimpleExporterInput;
 import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
 
@@ -13,39 +14,57 @@ import javax.sql.DataSource;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.sql.Connection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class RenderService {
 
     static {
-        JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance())
-            .setProperty("net.sf.jasperreports.awt.ignore.missing.font", "true");
+        System.setProperty("net.sf.jasperreports.awt.ignore.missing.font", "true");
+        Logger.getLogger("").setLevel(Level.OFF);
     }
 
     public ByteArrayOutputStream render(RenderRequest request) throws Exception {
-        ByteArrayInputStream bais = new ByteArrayInputStream(request.jrxml.getBytes("UTF-8"));
-        JasperReport jasperReport = JasperCompileManager.compileReport(bais);
+        byte[] jrxmlBytes = request.jrxml.getBytes("UTF-8");
+        JasperReportsContext ctx = DefaultJasperReportsContext.getInstance();
+
+        // Find ReportLoaders via ServiceLoader
+        ServiceLoader<ReportLoader> loader = ServiceLoader.load(ReportLoader.class);
+        JasperDesign design = null;
+        int count = 0;
+
+        for (ReportLoader reportLoader : loader) {
+            count++;
+            System.err.println("Trying ReportLoader: " + reportLoader.getClass().getName());
+            Optional<JasperDesign> opt = reportLoader.loadReport(ctx, jrxmlBytes);
+            if (opt.isPresent()) {
+                design = opt.get();
+                System.err.println("  -> SUCCESS");
+                break;
+            }
+            System.err.println("  -> EMPTY");
+        }
+        
+        System.err.println("ReportLoaders tried: " + count);
+
+        if (design == null) {
+            throw new JRException("Unable to load report: no ReportLoader accepted the format");
+        }
+
+        JasperReport jasperReport = JasperCompileManager.compileReport(design);
 
         Map<String, Object> params = convertParameters(request.parameters);
-
         Connection connection = null;
-        JRDataSource jrDataSource = null;
-
         if (request.dataSource != null && request.dataSource.isSql()) {
             DataSource ds = DataSourceFactory.create(request.dataSource);
             connection = ds.getConnection();
-        } else if (request.dataSource != null && request.dataSource.isInline()) {
-            jrDataSource = createInlineDataSource(request.inlineData);
         }
 
         JasperPrint jasperPrint;
         try {
             if (connection != null) {
                 jasperPrint = JasperFillManager.fillReport(jasperReport, params, connection);
-            } else if (jrDataSource != null) {
-                jasperPrint = JasperFillManager.fillReport(jasperReport, params, jrDataSource);
             } else {
                 jasperPrint = JasperFillManager.fillReport(jasperReport, params, new JREmptyDataSource());
             }
@@ -54,19 +73,17 @@ public class RenderService {
         }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
         if (request.format.equals("pdf")) {
             JRPdfExporter exporter = new JRPdfExporter();
             exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
             exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(baos));
             exporter.exportReport();
         } else {
-            JRXlsxExporter exporter = new JRXlsxExporter();
+            JRXlsExporter exporter = new JRXlsExporter();
             exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
             exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(baos));
             exporter.exportReport();
         }
-
         return baos;
     }
 
@@ -85,10 +102,5 @@ public class RenderService {
             else result.put(entry.getKey(), val.asText());
         }
         return result;
-    }
-
-    private JRDataSource createInlineDataSource(JsonNode inlineData) throws Exception {
-        if (inlineData == null) return new JREmptyDataSource();
-        return new JsonDataSource(new ByteArrayInputStream(inlineData.toString().getBytes("UTF-8")));
     }
 }

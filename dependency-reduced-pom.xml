@@ -4,7 +4,7 @@
   <groupId>io.github.open-report-engine</groupId>
   <artifactId>jrxml-renderer</artifactId>
   <name>JRXML Renderer</name>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
   <build>
     <finalName>jrxml-renderer</finalName>
     <plugins>
@@ -23,6 +23,9 @@
                   <mainClass>io.github.openreportengine.App</mainClass>
                 </transformer>
                 <transformer />
+                <transformer>
+                  <resource>jasperreports_extension.properties</resource>
+                </transformer>
               </transformers>
               <filters>
                 <filter>
@@ -46,7 +49,7 @@
     <clickhouse-jdbc.version>0.5.0</clickhouse-jdbc.version>
     <poi.version>5.4.0</poi.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jasperreports.version>6.21.5</jasperreports.version>
+    <jasperreports.version>7.0.6</jasperreports.version>
     <logback.version>1.5.17</logback.version>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>

@@ -1,7 +1,9 @@
 target/
 *.class
 *.jar
-!target/*.jar
+!target/jrxml-renderer.jar
+!lib/*.jar
 .idea/
 .vscode/
 *~
+dependency-reduced-pom.xml
