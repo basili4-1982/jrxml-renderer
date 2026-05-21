@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.github.openreportengine.datasource.DataSourceFactory;
 import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.export.JRCsvExporter;
+import net.sf.jasperreports.engine.export.ooxml.JRDocxExporter;
 import net.sf.jasperreports.engine.xml.ReportLoader;
 import net.sf.jasperreports.pdf.JRPdfExporter;
 import net.sf.jasperreports.poi.export.JRXlsExporter;
 import net.sf.jasperreports.export.SimpleExporterInput;
 import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
+import net.sf.jasperreports.export.SimpleWriterExporterOutput;
 
 import javax.sql.DataSource;
 import java.io.ByteArrayInputStream;
@@ -73,16 +76,31 @@ public class RenderService {
         }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        if (request.format.equals("pdf")) {
-            JRPdfExporter exporter = new JRPdfExporter();
-            exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
-            exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(baos));
-            exporter.exportReport();
-        } else {
-            JRXlsExporter exporter = new JRXlsExporter();
-            exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
-            exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(baos));
-            exporter.exportReport();
+        switch (request.format) {
+            case "pdf":
+                JRPdfExporter pdfExporter = new JRPdfExporter();
+                pdfExporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+                pdfExporter.setExporterOutput(new SimpleOutputStreamExporterOutput(baos));
+                pdfExporter.exportReport();
+                break;
+            case "xlsx":
+                JRXlsExporter xlsxExporter = new JRXlsExporter();
+                xlsxExporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+                xlsxExporter.setExporterOutput(new SimpleOutputStreamExporterOutput(baos));
+                xlsxExporter.exportReport();
+                break;
+            case "docx":
+                JRDocxExporter docxExporter = new JRDocxExporter();
+                docxExporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+                docxExporter.setExporterOutput(new SimpleOutputStreamExporterOutput(baos));
+                docxExporter.exportReport();
+                break;
+            case "csv":
+                JRCsvExporter csvExporter = new JRCsvExporter();
+                csvExporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+                csvExporter.setExporterOutput(new SimpleWriterExporterOutput(baos));
+                csvExporter.exportReport();
+                break;
         }
         return baos;
     }

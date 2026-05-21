@@ -36,8 +36,8 @@ public class RenderRequest {
         req.jrxml = jrxmlNode.asText();
 
         req.format = node.has("format") ? node.get("format").asText("pdf") : "pdf";
-        if (!req.format.equals("pdf") && !req.format.equals("xlsx")) {
-            throw new IllegalArgumentException("format must be 'pdf' or 'xlsx'");
+        if (!req.format.equals("pdf") && !req.format.equals("xlsx") && !req.format.equals("docx") && !req.format.equals("csv")) {
+            throw new IllegalArgumentException("format must be 'pdf', 'xlsx', 'docx' or 'csv'");
         }
 
         if (node.has("data_source")) {

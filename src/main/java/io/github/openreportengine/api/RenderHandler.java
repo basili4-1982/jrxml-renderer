@@ -48,9 +48,23 @@ public class RenderHandler implements HttpHandler {
 
                 ByteArrayOutputStream baos = renderService.render(request);
 
-                String contentType = request.format.equals("xlsx")
-                    ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    : "application/pdf";
+                String contentType;
+                switch (request.format) {
+                    case "pdf":
+                        contentType = "application/pdf";
+                        break;
+                    case "xlsx":
+                        contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        break;
+                    case "docx":
+                        contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                        break;
+                    case "csv":
+                        contentType = "text/csv; charset=utf-8";
+                        break;
+                    default:
+                        contentType = "application/octet-stream";
+                }
 
                 exchange.setStatusCode(200);
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, contentType);
