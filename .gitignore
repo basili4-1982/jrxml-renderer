@@ -7,3 +7,5 @@ target/
 .vscode/
 *~
 dependency-reduced-pom.xml
+jdk21/
+Dockerfile.build
